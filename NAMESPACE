@@ -1,0 +1,6 @@
+# Rcpp
+useDynLib(sgmm, .registration=TRUE)
+importFrom(Rcpp, evalCpp)
+exportPattern("^[[:alpha:]]+")
+# command
+export(sgmm)
