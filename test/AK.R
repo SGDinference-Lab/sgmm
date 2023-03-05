@@ -67,18 +67,18 @@ x1 = x1[ind,]
 z1 = z1[ind,]
 y1 = y1[ind]
 
-# SIVE
+# SGMM
 out = sgmm::sgmm(x=x1, y=y1, z=z1, gamma_0=1, alpha=0.501, bt_start = bt_start,
            inference = "rs", n0 = n0,
-           Phi_start = Phi_start, w_start = w_start)
+           Phi_start = Phi_start, w_start = w_start, np = 10)
 
 #out_mb = sive_mb(x=x1, y=y1, z=z1, gamma_0=1, alpha=0.501, bt_start = bt_start,
 #                 inference = "rs", n0 = n0)
 
 cv_rs = 6.747
-est_sive = out$coefficient[d]
-est_ci_lb = est_sive - cv_rs * sqrt(out$V_hat[d,d]/(n-n0))
-est_ci_ub = est_sive + cv_rs * sqrt(out$V_hat[d,d]/(n-n0))
+est_sive = out$coefficient[d,]
+est_ci_lb = est_sive - cv_rs * sqrt(out$V_hat[d,d,]/(n-n0))
+est_ci_ub = est_sive + cv_rs * sqrt(out$V_hat[d,d,]/(n-n0))
 
 res_sive = cbind(est_sive, est_ci_lb, est_ci_ub)
 

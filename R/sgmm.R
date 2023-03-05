@@ -26,18 +26,26 @@
 #' x = matrix(rnorm(n*(p-1)), n, (p-1))
 #' y = cbind(1,x) %*% bt0 + rnorm(n)
 
-sgmm = function(x, y, z, gamma_0=1, alpha=0.501, bt_start = NULL,
-                  inference = "rs", n0 = 0,
-                  Phi_start,
-                  w_start
-  ){
+sgmm = function(x=x, y=y, z=x, gamma_0=1, alpha=0.501, bt_start = NULL, 
+                inference="rs", n0=0, Phi_start=Phi_start, 
+                w_start=w_start, np=1){
   x = as.matrix(x)
   z = as.matrix(z)
 
   # Get the dimension of x and the sample size: p and n
   p = ncol(as.matrix(x))
   n = length(y)
-
+  
+  beta_hat_all = {}
+  V_hat_all = {}
+  
+  for (i_p in 1:np){
+    
+    ind = sample.int(n, n)
+    x = x[ind,]
+    z = z[ind,]
+    y = y[ind]
+    
   # Initialize the bt_t, A_t, b_t, c_t
   if (is.null(bt_start)){
     bt_t = bar_bt_t = bt_start = matrix(0, nrow=p, ncol=1)
@@ -52,10 +60,16 @@ sgmm = function(x, y, z, gamma_0=1, alpha=0.501, bt_start = NULL,
   #----------------------------------------------
   # Linear Instrumental Variable Mean Regression
   #----------------------------------------------
+  # out = s2sls_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, Phi_start, w_start)
   out = sgmm_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, Phi_start, w_start)
   beta_hat = out$beta_hat
   V_hat = out$V_hat
-
-  return(list(coefficient=beta_hat, V_hat = V_hat))
+  
+  beta_hat_all = cbind(beta_hat_all, beta_hat)
+  V_hat_all = abind::abind(V_hat_all, V_hat, along=3)
+  
+  }
+  
+  return(list(coefficient=beta_hat_all, V_hat=V_hat_all))
 
 }
