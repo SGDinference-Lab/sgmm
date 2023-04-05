@@ -22,7 +22,7 @@ library(sketching)
 
 ```{r}
 # Setup
-n <- 1e+3
+n <- 1e+4
 n0  <- ceiling(n*0.1)
 p <- 5
 q <- 20
