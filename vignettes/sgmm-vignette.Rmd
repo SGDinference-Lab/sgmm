@@ -1,0 +1,118 @@
+---
+title: "sgmm-vignette"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{sgmm-vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(sgmm)
+library(sketching)
+```
+
+
+```{r}
+y <- AK$LWKLYWGE
+intercept <- AK$CNST
+X_end <- AK$EDUC
+X_exg <- AK[,3:11]
+x <- cbind(X_exg, X_end)
+Z_inst <- AK[,12:(ncol(AK)-1)]
+z <- cbind(X_exg, Z_inst)
+fullsample <- cbind(y,intercept,x)
+n <- nrow(fullsample)
+d <- ncol(x)
+x <- as.matrix(x)
+z <- as.matrix(z)
+n0  <- ceiling(n*0.1)
+```
+
+
+```{r}
+# scaling
+sd_x = sd(x)
+sd_y = sd(y)
+x = scale(x)
+y = scale(y)
+z = scale(z)
+# scaling factor
+cns = sd_y/sd_x
+```
+
+
+```{r}
+# TSLS
+tsls = ivreg::ivreg(y ~ x | z) 
+# use heteroskedasticity-robust standard error for inference
+tsls_ci = lmtest:: coefci(tsls, parm = (d+1), level = 0.95, df = Inf, 
+                          vcov = sandwich::vcovHC, type = "HC0")
+res_tsls = cns * cbind(tsls$coefficients[d+1], tsls_ci)
+row.names(res_tsls) = "edu"
+colnames(res_tsls)[1] = "est"
+print(res_tsls)
+```
+
+```{r}
+# sample split: initial sample 
+x0 = x[c(1:n0),]
+z0 = z[c(1:n0),]
+y0 = y[c(1:n0)]
+# sample split: main sample 
+x1 = x[c((n0+1):n),]
+z1 = z[c((n0+1):n),]
+y1 = y[c((n0+1):n)]
+```
+
+
+```{r}
+# s2sls: starting values
+Phi_start = (t(z0)%*%x0)/n0
+# no intercept TSLS
+iv0 = ivreg::ivreg(y0 ~ x0 - 1 | z0 - 1)
+bt_start = iv0$coefficients
+w_start = solve(t(z0)%*%z0/n0)
+print(bt_start)
+```
+
+```{r}
+# random permutation
+nper = 100
+n1 = (n-n0)
+# S2SLS
+out = sgmm(x=x1, y=y1, z=z1, gamma_0=1, alpha=0.501, bt_start = bt_start,
+           inference = "rs", weight= "2sls", n0 = n0,
+           Phi_start = Phi_start, w_start = w_start, n_perm = nper)
+```
+
+
+```{r}
+# confidence intervals 
+cv_rs = 6.747
+est = out$coefficient[d,]
+est_ci_lb = est - cv_rs * sqrt(out$V_hat[d,d,]/n1)
+est_ci_ub = est + cv_rs * sqrt(out$V_hat[d,d,]/n1)
+res_s2sls = cns * cbind(est, est_ci_lb, est_ci_ub)
+print(res_s2sls)
+```
+
+
+```{r}
+final_median = apply(res_s2sls, 2, median)
+final_mean = apply(res_s2sls, 2, mean)
+print(final_median)
+print(final_mean)
+```
+
+```{r}
+print(res_tsls)
+```
+

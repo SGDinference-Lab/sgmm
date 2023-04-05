@@ -1,17 +1,22 @@
-#' SGMM and Inference via Random Scaling
+#' SGMM: Estimation and Inference via Random Scaling
 #'
 #' sgmm computes the SGMM estimator and the confidence interval via random scaling method.
 #'
-#' @param x numeric. (n x p) matrix of regressors. Should not include 1 (the intercept)
-#' @param y numeric
-#' @param z numeric. (n x q) matrix of instruments. Should not include 1 (the intercept)
-#' @param gamma_0 numeric
-#' @param alpha numeric
-#' @param bt_start numeric
-#' @param inference character specifying the inference method. Default is "rs" (random scaling)
-#' @param n0 numeric
+#' @param x (n x p) matrix of regressors 
+#' @param y (n x 1) vector of the dependent variable
+#' @param z (n x q) matrix of instruments 
+#' @param gamma_0 a constant for the learning rate (default: 1)
+#' @param alpha an exponent for the learning rate (default: 0.501)
+#' @param bt_start starting values for the parameters (default: zero vector)
+#' @param inference character specifying the inference method (default: "rs",i.e. random scaling)
+#' @param weight character specifying the type of the weighting matrix (default: "2sls")
+#' @param n0 sample size for the initial sample (default: 0)
 #' @param Phi_start (p x q) matrix of starting values for Phi
 #' @param w_start (q x q) matrix of starting values for W 
+#' @param n_perm number of permutations (default: 1)
+#' @note all x, y, z variables should be normalized to have sample mean zero. 
+#' No intercept should be included in x and z for which p <= q.
+#' The learning rate has the form: (gamma_0) times k^(alpha) for k=1,2,...  
 #'
 #' @return
 #' #' An object of class \code{"sgdi"}, which is a list containing the following
@@ -27,8 +32,9 @@
 #' y = cbind(1,x) %*% bt0 + rnorm(n)
 
 sgmm = function(x=x, y=y, z=x, gamma_0=1, alpha=0.501, bt_start = NULL, 
-                inference="rs", n0=0, Phi_start=Phi_start, 
-                w_start=w_start, np=1){
+                inference="rs", weight="2sls", n0=0, Phi_start=Phi_start, 
+                w_start=w_start, n_perm=1){
+
   x = as.matrix(x)
   z = as.matrix(z)
 
@@ -39,7 +45,7 @@ sgmm = function(x=x, y=y, z=x, gamma_0=1, alpha=0.501, bt_start = NULL,
   beta_hat_all = {}
   V_hat_all = {}
   
-  for (i_p in 1:np){
+  for (i_p in 1:n_perm){
     
     ind = sample.int(n, n)
     x = x[ind,]
@@ -60,8 +66,13 @@ sgmm = function(x=x, y=y, z=x, gamma_0=1, alpha=0.501, bt_start = NULL,
   #----------------------------------------------
   # Linear Instrumental Variable Mean Regression
   #----------------------------------------------
-  # out = s2sls_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, Phi_start, w_start)
-  out = sgmm_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, Phi_start, w_start)
+  
+  if (weight=="2sls"){
+    out = s2sls_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, Phi_start, w_start)
+  } else if (weight=="gmm"){
+    out = sgmm_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, Phi_start, w_start)
+  }  
+
   beta_hat = out$beta_hat
   V_hat = out$V_hat
   

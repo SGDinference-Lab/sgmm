@@ -2,41 +2,47 @@
 % Please edit documentation in R/sgmm.R
 \name{sgmm}
 \alias{sgmm}
-\title{SGMM and Inference via Random Scaling}
+\title{SGMM: Estimation and Inference via Random Scaling}
 \usage{
 sgmm(
-  x,
-  y,
-  z,
+  x = x,
+  y = y,
+  z = x,
   gamma_0 = 1,
   alpha = 0.501,
   bt_start = NULL,
   inference = "rs",
+  weight = "2sls",
   n0 = 0,
-  Phi_start,
-  w_start
+  Phi_start = Phi_start,
+  w_start = w_start,
+  n_perm = 1
 )
 }
 \arguments{
-\item{x}{numeric. (n x p) matrix of regressors. Should not include 1 (the intercept)}
+\item{x}{(n x p) matrix of regressors}
 
-\item{y}{numeric}
+\item{y}{(n x 1) vector of the dependent variable}
 
-\item{z}{numeric. (n x q) matrix of instruments. Should not include 1 (the intercept)}
+\item{z}{(n x q) matrix of instruments}
 
-\item{gamma_0}{numeric}
+\item{gamma_0}{a constant for the learning rate (default: 1)}
 
-\item{alpha}{numeric}
+\item{alpha}{an exponent for the learning rate (default: 0.501)}
 
-\item{bt_start}{numeric}
+\item{bt_start}{starting values for the parameters (default: zero vector)}
 
-\item{inference}{character specifying the inference method. Default is "rs" (random scaling)}
+\item{inference}{character specifying the inference method (default: "rs",i.e. random scaling)}
 
-\item{n0}{numeric}
+\item{weight}{character specifying the type of the weighting matrix (default: "2sls")}
+
+\item{n0}{sample size for the initial sample (default: 0)}
 
 \item{Phi_start}{(p x q) matrix of starting values for Phi}
 
 \item{w_start}{(q x q) matrix of starting values for W}
+
+\item{n_perm}{number of permutations (default: 1)}
 }
 \value{
 #' An object of class \code{"sgdi"}, which is a list containing the following
@@ -44,6 +50,11 @@ components:
 }
 \description{
 sgmm computes the SGMM estimator and the confidence interval via random scaling method.
+}
+\note{
+all x, y, z variables should be normalized to have sample mean zero. 
+No intercept should be included in x and z for which p <= q.
+The learning rate has the form: (gamma_0) times k^(alpha) for k=1,2,...
 }
 \examples{
 n = 1e05
