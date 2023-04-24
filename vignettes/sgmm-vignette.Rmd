@@ -126,7 +126,7 @@ We now report estimation results.
 est = out$coefficient[d,]
 est_ci_lb = est - cv_rs * sqrt(out$V_hat[d,d,]/n1)
 est_ci_ub = est + cv_rs * sqrt(out$V_hat[d,d,]/n1)
-res_sgmm = cbind(est, est_ci_lb, est_ci_ub)
+res_sgmm = cns * cbind(est, est_ci_lb, est_ci_ub)
 print(res_sgmm, digits=3)
 ```
 
