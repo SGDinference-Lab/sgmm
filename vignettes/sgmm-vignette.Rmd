@@ -85,7 +85,7 @@ print(bt_start)
 
 ```{r}
 # random permutation
-nper = 100
+nper = 1
 n1 = (n-n0)
 # S2SLS
 out = sgmm(x=x1, y=y1, z=z1, gamma_0=1, alpha=0.501, bt_start = bt_start,

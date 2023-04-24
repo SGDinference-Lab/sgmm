@@ -1,8 +1,8 @@
 ---
-title: "sgmm-vignette"
+title: "sgmm-MC-vignette"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{sgmm-vignette}
+  %\VignetteIndexEntry{sgmm-MC-vignette}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
