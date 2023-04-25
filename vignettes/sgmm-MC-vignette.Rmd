@@ -1,8 +1,8 @@
 ---
-title: "sgmm-vignette"
+title: "sgmm-MC-vignette"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{sgmm-vignette}
+  %\VignetteIndexEntry{sgmm-MC-vignette}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -14,20 +14,21 @@ knitr::opts_chunk$set(
 )
 ```
 
+We first call the __sgmm__ package.
+
 ```{r setup}
 library(sgmm)
-library(sketching)
 ```
+
+Then we set up the simulation design.
 
 
 ```{r}
 # Setup
 n <- 1e+4
-n0  <- ceiling(n*0.1)
 p <- 5
 q <- 20
 alpha <- 0.05
-cv <- qnorm(1 - alpha/2)
 mu <- rep(0,q)
 rho <- 0.5
 Sigma_first_row <- rho^(0:(q-1)) 
@@ -36,6 +37,7 @@ beta <- matrix(rep(1,p), nrow = p, ncol = 1)
 true_beta <- beta[p]
 ```
 
+We now generate data from a simple model. 
 
 ```{r}
   # generate data
@@ -51,12 +53,19 @@ true_beta <- beta[p]
   Y <- X %*% beta + het*(V + eps)
 ```
 
+We scale variables.
+
 ```{r}
+# true beta with scaling
+true_beta = (true_beta * sd(X[,p]))/sd(Y)
+print(true_beta, digits=3)
 # scaling
 X = scale(X)
 Y = scale(Y)
 Z = scale(Z)
 ```
+
+As a benchmark, we run TSLS.
 
 ```{r}
 # TSLS
@@ -67,10 +76,13 @@ tsls_ci = lmtest:: coefci(tsls, parm = (p+1), level = 0.95, df = Inf,
 res_tsls = cbind(tsls$coefficients[p+1], tsls_ci)
 row.names(res_tsls) = "X endog"
 colnames(res_tsls)[1] = "est"
-print(res_tsls)
+print(res_tsls, digits=3)
 ```
 
+We now move to stochastic approximation.
+
 ```{r}
+n0 = ceiling(n*0.1)
 # sample split: initial sample 
 x0 = X[c(1:n0),]
 z0 = Z[c(1:n0),]
@@ -81,6 +93,7 @@ z1 = Z[c((n0+1):n),]
 y1 = Y[c((n0+1):n)]
 ```
 
+We use TSLS from the initial sample as our starting values.
 
 ```{r}
 # s2sls: starting values
@@ -89,8 +102,10 @@ Phi_start = (t(z0)%*%x0)/n0
 iv0 = ivreg::ivreg(y0 ~ x0 - 1 | z0 - 1)
 bt_start = iv0$coefficients
 w_start = solve(t(z0)%*%z0/n0)
-print(bt_start)
+print(bt_start, digits=3)
 ```
+
+To check randomness, we carry out random permutation. 
 
 ```{r}
 # random permutation
@@ -102,6 +117,7 @@ out = sgmm(x=x1, y=y1, z=z1, gamma_0=1, alpha=0.501, bt_start = bt_start,
            Phi_start = Phi_start, w_start = w_start, n_perm = nper)
 ```
 
+We now report estimation results.
 
 ```{r}
 # confidence intervals 
@@ -110,18 +126,54 @@ est = out$coefficient[p,]
 est_ci_lb = est - cv_rs * sqrt(out$V_hat[p,p,]/n1)
 est_ci_ub = est + cv_rs * sqrt(out$V_hat[p,p,]/n1)
 res_s2sls = cbind(est, est_ci_lb, est_ci_ub)
-print(res_s2sls)
+print(res_s2sls, digits=3)
 ```
 
+The estimation results are not very sensitive to the order of sequence. 
 
 ```{r}
-final_median = apply(res_s2sls, 2, median)
-final_mean = apply(res_s2sls, 2, mean)
-print(final_median)
-print(final_mean)
+s2sls_median = apply(res_s2sls, 2, median)
+print(s2sls_median, digits=3)
+```
+Recall that a non-stochastic version of TSLS produes the following result.
+
+```{r}
+print(res_tsls, digits=3)
+```
+
+We now consider an efficient version of SGMM.
+
+```{r}
+# Use S2SLS (first among the permuted samples) as starting values
+bt_start = out$coefficient[,1]
+# SGMM
+out = sgmm(x=x1, y=y1, z=z1, gamma_0=1, alpha=0.501, bt_start = bt_start,
+           inference = "rs", weight= "gmm", n0 = n0,
+           Phi_start = Phi_start, w_start = w_start, n_perm = nper)
+```
+
+We now report estimation results.
+
+```{r}
+# confidence intervals 
+est = out$coefficient[p,]
+est_ci_lb = est - cv_rs * sqrt(out$V_hat[p,p,]/n1)
+est_ci_ub = est + cv_rs * sqrt(out$V_hat[p,p,]/n1)
+res_sgmm = cbind(est, est_ci_lb, est_ci_ub)
+print(res_sgmm, digits=3)
+```
+
+Again, the estimation results are not very sensitive to the order of sequence. 
+
+```{r}
+sgmm_median = apply(res_sgmm, 2, median)
+print(sgmm_median, digits=3)
 ```
 
 ```{r}
-print(res_tsls)
+# summary of results
+print(true_beta, digits=3)
+all_results = rbind(res_tsls, res_s2sls[1,], res_sgmm[1,])
+print(all_results, digits=3)
 ```
 

@@ -39,7 +39,7 @@ n0  <- ceiling(n*0.1)
 
 ```{r}
 # scaling
-sd_x = sd(x)
+sd_x = sd(X_end)
 sd_y = sd(y)
 x = scale(x)
 y = scale(y)
@@ -85,7 +85,7 @@ print(bt_start)
 
 ```{r}
 # random permutation
-nper = 100
+nper = 3
 n1 = (n-n0)
 # S2SLS
 out = sgmm(x=x1, y=y1, z=z1, gamma_0=1, alpha=0.501, bt_start = bt_start,
@@ -106,13 +106,38 @@ print(res_s2sls)
 
 
 ```{r}
-final_median = apply(res_s2sls, 2, median)
-final_mean = apply(res_s2sls, 2, mean)
-print(final_median)
-print(final_mean)
+s2sls_median = apply(res_s2sls, 2, median)
+print(s2sls_median, digits=3)
 ```
 
 ```{r}
-print(res_tsls)
+# Use S2SLS (first among the permuted samples) as starting values
+bt_start = out$coefficient[,1]
+# SGMM
+out = sgmm(x=x1, y=y1, z=z1, gamma_0=1, alpha=0.501, bt_start = bt_start,
+           inference = "rs", weight= "gmm", n0 = n0,
+           Phi_start = Phi_start, w_start = w_start, n_perm = nper)
 ```
 
+We now report estimation results.
+
+```{r}
+# confidence intervals 
+est = out$coefficient[d,]
+est_ci_lb = est - cv_rs * sqrt(out$V_hat[d,d,]/n1)
+est_ci_ub = est + cv_rs * sqrt(out$V_hat[d,d,]/n1)
+res_sgmm = cns * cbind(est, est_ci_lb, est_ci_ub)
+print(res_sgmm, digits=3)
+```
+
+
+```{r}
+sgmm_median = apply(res_sgmm, 2, median)
+print(sgmm_median, digits=3)
+```
+
+```{r}
+# summary of results
+all_results = rbind(res_tsls, res_s2sls[1,], res_sgmm[1,])
+print(all_results, digits=3)
+```

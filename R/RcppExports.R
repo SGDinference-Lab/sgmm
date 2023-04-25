@@ -2,10 +2,10 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 s2sls_cpp <- function(x, y, z, gamma_0, alpha, bt_start, inference, n0, Phi_start, w_start) {
-    .Call(`_sgmm_s2sls_cpp`, x, y, z, gamma_0, alpha, bt_start, inference, n0, Phi_start, w_start)
+    .Call('_sgmm_s2sls_cpp', PACKAGE = 'sgmm', x, y, z, gamma_0, alpha, bt_start, inference, n0, Phi_start, w_start)
 }
 
 sgmm_cpp <- function(x, y, z, gamma_0, alpha, bt_start, inference, n0, Phi_start, w_start) {
-    .Call(`_sgmm_sgmm_cpp`, x, y, z, gamma_0, alpha, bt_start, inference, n0, Phi_start, w_start)
+    .Call('_sgmm_sgmm_cpp', PACKAGE = 'sgmm', x, y, z, gamma_0, alpha, bt_start, inference, n0, Phi_start, w_start)
 }
 

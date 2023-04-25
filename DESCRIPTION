@@ -17,9 +17,15 @@ RoxygenNote: 7.2.3
 Imports: Rcpp (>= 1.0.9), abind
 LinkingTo: Rcpp, RcppArmadillo
 Suggests: 
+    MASS,
     knitr,
     rmarkdown,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    ivreg (>= 0.6),
+    lmtest (>= 0.9),
+    sandwich (>= 3.0),
+    microbenchmark (>= 1.4),
+    sketching (>= 0.1)
 VignetteBuilder: knitr
 Depends: 
     R (>= 4.1.0)
