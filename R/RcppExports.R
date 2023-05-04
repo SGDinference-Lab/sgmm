@@ -9,3 +9,7 @@ sgmm_cpp <- function(x, y, z, gamma_0, alpha, bt_start, inference, n0, Phi_start
     .Call('_sgmm_sgmm_cpp', PACKAGE = 'sgmm', x, y, z, gamma_0, alpha, bt_start, inference, n0, Phi_start, w_start)
 }
 
+sgmm_new_cpp <- function(x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start) {
+    .Call('_sgmm_sgmm_new_cpp', PACKAGE = 'sgmm', x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start)
+}
+

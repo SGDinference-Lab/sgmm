@@ -11,9 +11,10 @@
 #' @param inference character specifying the inference method (default: "rs",i.e. random scaling)
 #' @param weight character specifying the type of the weighting matrix (default: "2sls")
 #' @param n0 sample size for the initial sample (default: 0)
+#' @param n1 sample size for the s2sls sample when "gmm" option is chosen (default: 0)
 #' @param Phi_start (p x q) matrix of starting values for Phi
 #' @param w_start (q x q) matrix of starting values for W 
-#' @param n_perm number of permutations (default: 1)
+#' @param n_perm number of permutations (default: 1). If n_perm=0, there is no permutation. 
 #' @note all x, y, z variables should be normalized to have sample mean zero. 
 #' No intercept should be included in x and z for which p <= q.
 #' The learning rate has the form: (gamma_0) times k^(alpha) for k=1,2,...  
@@ -32,7 +33,7 @@
 #' y = cbind(1,x) %*% bt0 + rnorm(n)
 
 sgmm = function(x=x, y=y, z=x, gamma_0=1, alpha=0.501, bt_start = NULL, 
-                inference="rs", weight="2sls", n0=0, Phi_start=Phi_start, 
+                inference="rs", weight="2sls", n0=0, n1=0, Phi_start=Phi_start, 
                 w_start=w_start, n_perm=1){
 
   x = as.matrix(x)
@@ -45,42 +46,74 @@ sgmm = function(x=x, y=y, z=x, gamma_0=1, alpha=0.501, bt_start = NULL,
   beta_hat_all = {}
   V_hat_all = {}
   
-  for (i_p in 1:n_perm){
+  if (n_perm == 0) {
+    # Initialize the bt_t, A_t, b_t, c_t
+    if (is.null(bt_start)){
+      bt_t = bar_bt_t = bt_start = matrix(0, nrow=p, ncol=1)
+    } else {
+      bt_t = bar_bt_t = matrix(bt_start, nrow=p, ncol=1)
+    }
+    A_t = matrix(0, p, p)
+    b_t = matrix(0, p, 1)
+    c_t = 0
+    V_t = NULL
     
-    ind = sample.int(n, n)
-    x = x[ind,]
-    z = z[ind,]
-    y = y[ind]
+    #----------------------------------------------
+    # Linear Instrumental Variable Mean Regression
+    #----------------------------------------------
     
-  # Initialize the bt_t, A_t, b_t, c_t
-  if (is.null(bt_start)){
-    bt_t = bar_bt_t = bt_start = matrix(0, nrow=p, ncol=1)
-  } else {
-    bt_t = bar_bt_t = matrix(bt_start, nrow=p, ncol=1)
+    if (weight=="2sls"){
+      out = s2sls_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, Phi_start, w_start)
+    } else if (weight=="gmm"){
+      out = sgmm_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, Phi_start, w_start)
+    } else if (weight=="gmm_new"){ 
+      out = sgmm_new_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start)
+    }
+    
+    beta_hat = out$beta_hat
+    V_hat = out$V_hat
+    
+    beta_hat_all = cbind(beta_hat_all, beta_hat)
+    V_hat_all = abind::abind(V_hat_all, V_hat, along=3)
+  } else if (n_perm > 0) {
+    for (i_p in 1:n_perm){
+      
+      ind = sample.int(n, n)
+      x = x[ind,]
+      z = z[ind,]
+      y = y[ind]
+      
+      # Initialize the bt_t, A_t, b_t, c_t
+      if (is.null(bt_start)){
+        bt_t = bar_bt_t = bt_start = matrix(0, nrow=p, ncol=1)
+      } else {
+        bt_t = bar_bt_t = matrix(bt_start, nrow=p, ncol=1)
+      }
+      A_t = matrix(0, p, p)
+      b_t = matrix(0, p, 1)
+      c_t = 0
+      V_t = NULL
+      
+      #----------------------------------------------
+      # Linear Instrumental Variable Mean Regression
+      #----------------------------------------------
+      
+      if (weight=="2sls"){
+        out = s2sls_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, Phi_start, w_start)
+      } else if (weight=="gmm"){
+        out = sgmm_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, Phi_start, w_start)
+      } else if (weight=="gmm_new"){ 
+        out = sgmm_new_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start)
+      }
+      
+      beta_hat = out$beta_hat
+      V_hat = out$V_hat
+      
+      beta_hat_all = cbind(beta_hat_all, beta_hat)
+      V_hat_all = abind::abind(V_hat_all, V_hat, along=3)
+      
+    }
   }
-  A_t = matrix(0, p, p)
-  b_t = matrix(0, p, 1)
-  c_t = 0
-  V_t = NULL
-
-  #----------------------------------------------
-  # Linear Instrumental Variable Mean Regression
-  #----------------------------------------------
-  
-  if (weight=="2sls"){
-    out = s2sls_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, Phi_start, w_start)
-  } else if (weight=="gmm"){
-    out = sgmm_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, Phi_start, w_start)
-  }  
-
-  beta_hat = out$beta_hat
-  V_hat = out$V_hat
-  
-  beta_hat_all = cbind(beta_hat_all, beta_hat)
-  V_hat_all = abind::abind(V_hat_all, V_hat, along=3)
-  
-  }
-  
   return(list(coefficient=beta_hat_all, V_hat=V_hat_all))
 
 }
