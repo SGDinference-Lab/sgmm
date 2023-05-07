@@ -41,15 +41,19 @@ List sgmm_new_cpp(const arma::mat& x,
   bar_bt_i.zeros(p);
   arma::mat i_mat = eye(q,q);
   double m_i;
+  arma::vec z_i = trans(z.row(0));
+  arma::mat G_i = z_i * x.row(0);
+  arma::vec H_i = - z_i * y(0);
+  arma::vec small_g_i = G_i * bt_i + H_i;
   
   // S2SLS procedure for the first 'n1' observations. 
   for (int obs = 1; obs < (n1+1); obs++){
     
     gamma_i = gamma_0 * std::pow(obs, -alpha);
-    arma::vec z_i = trans(z.row(obs-1));
-    arma::mat G_i = z_i * x.row(obs-1);
-    arma::vec H_i = - z_i * y(obs-1);
-    arma::vec small_g_i = G_i * bt_i + H_i;
+    z_i = trans(z.row(obs-1));
+    G_i = z_i * x.row(obs-1);
+    H_i = - z_i * y(obs-1);
+    small_g_i = G_i * bt_i + H_i;
     bt_i = bt_i - gamma_i * trans(Phi_lag) * w_i * small_g_i;
     Phi_lag = (n0 + obs - 1) * Phi_lag /(n0 + obs)  + (1)* G_i/(n0+obs);
     m_i = ( (n0 + obs - 1) + trans(z_i) * w_i * z_i ).eval()(0,0);
@@ -67,10 +71,10 @@ List sgmm_new_cpp(const arma::mat& x,
   for (int obs = (n1+1); obs < (n+1); obs++){
 
     gamma_i = gamma_0 * std::pow(obs, -alpha);
-    arma::vec z_i = trans(z.row(obs-1));
-    arma::mat G_i = z_i * x.row(obs-1);
-    arma::vec H_i = - z_i * y(obs-1);
-    arma::vec small_g_i = G_i * bt_i + H_i;
+    z_i = trans(z.row(obs-1));
+    G_i = z_i * x.row(obs-1);
+    H_i = - z_i * y(obs-1);
+    small_g_i = G_i * bt_i + H_i;
     bt_i = bt_i - gamma_i * trans(Phi_lag) * w_i * small_g_i;
     Phi_lag = (n0 + obs - 1) * Phi_lag /(n0 + obs)  + (1)* G_i/(n0+obs);
     m_i = ( (n0 + obs - 1) + trans(small_g_i) * w_i * small_g_i ).eval()(0,0);
