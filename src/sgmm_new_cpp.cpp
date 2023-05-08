@@ -45,6 +45,10 @@ List sgmm_new_cpp(const arma::mat& x,
   arma::mat G_i = z_i * x.row(0);
   arma::vec H_i = - z_i * y(0);
   arma::vec small_g_i = G_i * bt_i + H_i;
+  arma::vec bar_small_g_i;
+  bar_small_g_i.zeros(q);
+  arma::vec small_g_i_at_bt_bar;
+  small_g_i_at_bt_bar.zeros(q);
   
   // S2SLS procedure for the first 'n1' observations. 
   for (int obs = 1; obs < (n1+1); obs++){
@@ -54,6 +58,7 @@ List sgmm_new_cpp(const arma::mat& x,
     G_i = z_i * x.row(obs-1);
     H_i = - z_i * y(obs-1);
     small_g_i = G_i * bt_i + H_i;
+    //bar_small_g_i = ( bar_small_g_i*(obs - 1) + small_g_i ) / obs;
     bt_i = bt_i - gamma_i * trans(Phi_lag) * w_i * small_g_i;
     Phi_lag = (n0 + obs - 1) * Phi_lag /(n0 + obs)  + (1)* G_i/(n0+obs);
     m_i = ( (n0 + obs - 1) + trans(z_i) * w_i * z_i ).eval()(0,0);
@@ -75,10 +80,21 @@ List sgmm_new_cpp(const arma::mat& x,
     G_i = z_i * x.row(obs-1);
     H_i = - z_i * y(obs-1);
     small_g_i = G_i * bt_i + H_i;
+    bar_small_g_i = ( bar_small_g_i*(obs - 1) + small_g_i ) / obs;
     bt_i = bt_i - gamma_i * trans(Phi_lag) * w_i * small_g_i;
     Phi_lag = (n0 + obs - 1) * Phi_lag /(n0 + obs)  + (1)* G_i/(n0+obs);
-    m_i = ( (n0 + obs - 1) + trans(small_g_i) * w_i * small_g_i ).eval()(0,0);
-    w_i = ((n0 + obs) * w_i) / (n0 + obs - 1) * ( i_mat - small_g_i * trans(small_g_i) * w_i / m_i );
+    
+    // original weight
+    //m_i = ( (n0 + obs - 1) + trans(small_g_i) * w_i * small_g_i ).eval()(0,0);
+    //w_i = ((n0 + obs) * w_i) / (n0 + obs - 1) * ( i_mat - (small_g_i * trans(small_g_i) ) * w_i / m_i );
+    // Demean bar_small_g_i. We apply the Woodbury formular twice after getting w_i
+    // w_i = w_i + (w_i * bar_small_g_i * trans(bar_small_g_i) * w_i) / (1-trans(bar_small_g_i)*w_i*bar_small_g_i).eval()(0,0);
+    
+    // weight is evaluated at bar_bt_i
+    small_g_i_at_bt_bar = G_i * bar_bt_i + H_i;
+    m_i = ( (n0 + obs - 1) + trans(small_g_i_at_bt_bar) * w_i * small_g_i_at_bt_bar ).eval()(0,0);    
+    w_i = ((n0 + obs) * w_i) / (n0 + obs - 1) * ( i_mat - (small_g_i_at_bt_bar * trans(small_g_i_at_bt_bar) ) * w_i / m_i );    
+    
     bar_bt_i = ( bar_bt_i*(obs - 1) + bt_i ) / (obs);
 
     if ( inference == "rs") {
