@@ -14,7 +14,8 @@ List sgmm_new_cpp(const arma::mat& x,
                   const int& n0,
                   const int& n1,
                   const arma::mat& Phi_start,
-                  const arma::mat& w_start){
+                  const arma::mat& w_start,
+                  const std::string w_option){
 
   int n = y.n_elem;
   int p = bt_start.n_elem;
@@ -49,6 +50,8 @@ List sgmm_new_cpp(const arma::mat& x,
   bar_small_g_i.zeros(q);
   arma::vec small_g_i_at_bt_bar;
   small_g_i_at_bt_bar.zeros(q);
+  double norm_g_i;
+  arma::vec bar_bt_i_fix;
   
   // S2SLS procedure for the first 'n1' observations. 
   for (int obs = 1; obs < (n1+1); obs++){
@@ -72,6 +75,9 @@ List sgmm_new_cpp(const arma::mat& x,
     }
   }
   
+  // bar_bt_i_fix = {1.0,1.0,1.0,1.0,1.0};
+  bar_bt_i_fix = bar_bt_i;
+  
   // SGMM procedure for the remaining 'n-n1' observations. 
   for (int obs = (n1+1); obs < (n+1); obs++){
 
@@ -84,16 +90,63 @@ List sgmm_new_cpp(const arma::mat& x,
     bt_i = bt_i - gamma_i * trans(Phi_lag) * w_i * small_g_i;
     Phi_lag = (n0 + obs - 1) * Phi_lag /(n0 + obs)  + (1)* G_i/(n0+obs);
     
-    // original weight
-    //m_i = ( (n0 + obs - 1) + trans(small_g_i) * w_i * small_g_i ).eval()(0,0);
-    //w_i = ((n0 + obs) * w_i) / (n0 + obs - 1) * ( i_mat - (small_g_i * trans(small_g_i) ) * w_i / m_i );
-    // Demean bar_small_g_i. We apply the Woodbury formular twice after getting w_i
+    if (w_option == "frequent"){
+      m_i = ( (n0 + obs - 1) + trans(small_g_i) * w_i * small_g_i ).eval()(0,0);
+      w_i = ((n0 + obs) * w_i) / (n0 + obs - 1) * ( i_mat - (small_g_i * trans(small_g_i) ) * w_i / m_i );
+    } else if (w_option == "single"){
+      small_g_i = G_i * bar_bt_i_fix + H_i;
+      m_i = ( (n0 + obs - 1) + trans(small_g_i) * w_i * small_g_i ).eval()(0,0);
+      w_i = ((n0 + obs) * w_i) / (n0 + obs - 1) * ( i_mat - (small_g_i * trans(small_g_i) ) * w_i / m_i );
+    } else if (w_option == "infrequent"){
+      small_g_i = G_i * bar_bt_i_fix + H_i;
+      m_i = ( (n0 + obs - 1) + trans(small_g_i) * w_i * small_g_i ).eval()(0,0);
+      w_i = ((n0 + obs) * w_i) / (n0 + obs - 1) * ( i_mat - (small_g_i * trans(small_g_i) ) * w_i / m_i );
+      if (obs*1.0/n == 0.4) {
+       bar_bt_i_fix = bar_bt_i;
+      }
+      if (obs*1.0/n == 0.6) {
+       bar_bt_i_fix = bar_bt_i;
+      }
+      if (obs*1.0/n == 0.8) {
+       bar_bt_i_fix = bar_bt_i;
+      }
+    } else {
+      Rcerr << "w_option is chosen incorrectly. \n";
+    }
+    
+    // Alternative 1: Demean bar_small_g_i. We apply the Woodbury formular twice after getting w_i
     // w_i = w_i + (w_i * bar_small_g_i * trans(bar_small_g_i) * w_i) / (1-trans(bar_small_g_i)*w_i*bar_small_g_i).eval()(0,0);
     
-    // weight is evaluated at bar_bt_i
-    small_g_i_at_bt_bar = G_i * bar_bt_i + H_i;
-    m_i = ( (n0 + obs - 1) + trans(small_g_i_at_bt_bar) * w_i * small_g_i_at_bt_bar ).eval()(0,0);    
-    w_i = ((n0 + obs) * w_i) / (n0 + obs - 1) * ( i_mat - (small_g_i_at_bt_bar * trans(small_g_i_at_bt_bar) ) * w_i / m_i );    
+    // Alternative 2: weight is evaluated at bar_bt_i
+    // small_g_i_at_bt_bar = G_i * bar_bt_i + H_i;
+    // m_i = ( (n0 + obs - 1) + trans(small_g_i_at_bt_bar) * w_i * small_g_i_at_bt_bar ).eval()(0,0);    
+    // w_i = ((n0 + obs) * w_i) / (n0 + obs - 1) * ( i_mat - (small_g_i_at_bt_bar * trans(small_g_i_at_bt_bar) ) * w_i / m_i );    
+    
+    // Alternative 3: normalize the small_g_i
+    // norm_g_i = norm(small_g_i);
+    // small_g_i = small_g_i/norm_g_i;
+    // m_i = ( (n0 + obs - 1) + trans(small_g_i) * w_i * small_g_i ).eval()(0,0);
+    // w_i = ((n0 + obs) * w_i) / (n0 + obs - 1) * ( i_mat - (small_g_i * trans(small_g_i) ) * w_i / m_i );
+    
+    // Alternative 4: bar_bt_i fix and compute weight
+    // small_g_i = G_i * bar_bt_i_fix + H_i;
+    // m_i = ( (n0 + obs - 1) + trans(small_g_i) * w_i * small_g_i ).eval()(0,0);
+    // w_i = ((n0 + obs) * w_i) / (n0 + obs - 1) * ( i_mat - (small_g_i * trans(small_g_i) ) * w_i / m_i );
+    // if (obs*10/n == 4) {
+    //   bar_bt_i_fix = bar_bt_i;
+    // }
+    // if (obs*10/n == 6) {
+    //   bar_bt_i_fix = bar_bt_i;
+    // }
+    // if (obs*10/n == 8) {
+    //   bar_bt_i_fix = bar_bt_i;
+    // }
+
+    // Alternative 5: bar_bt_i fix at the true beta_0
+    // small_g_i = G_i * bar_bt_i_fix + H_i;
+    // m_i = ( (n0 + obs - 1) + trans(small_g_i) * w_i * small_g_i ).eval()(0,0);
+    // w_i = ((n0 + obs) * w_i) / (n0 + obs - 1) * ( i_mat - (small_g_i * trans(small_g_i) ) * w_i / m_i );
+        
     
     bar_bt_i = ( bar_bt_i*(obs - 1) + bt_i ) / (obs);
 

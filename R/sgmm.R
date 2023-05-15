@@ -15,6 +15,7 @@
 #' @param Phi_start (p x q) matrix of starting values for Phi
 #' @param w_start (q x q) matrix of starting values for W 
 #' @param n_perm number of permutations (default: 1). If n_perm=0, there is no permutation. 
+#' @param w_option character specifying the option on beta_{i-1} when computing the weight. Default is "frequent"
 #' @note all x, y, z variables should be normalized to have sample mean zero. 
 #' No intercept should be included in x and z for which p <= q.
 #' The learning rate has the form: (gamma_0) times k^(alpha) for k=1,2,...  
@@ -34,7 +35,8 @@
 
 sgmm = function(x=x, y=y, z=x, gamma_0=1, alpha=0.501, bt_start = NULL, 
                 inference="rs", weight="2sls", n0=0, n1=0, Phi_start=Phi_start, 
-                w_start=w_start, n_perm=1){
+                #w_start=w_start, n_perm=1, w_option="frequent"){
+                w_start=w_start, n_perm=1, w_option){
 
   x = as.matrix(x)
   z = as.matrix(z)
@@ -67,7 +69,7 @@ sgmm = function(x=x, y=y, z=x, gamma_0=1, alpha=0.501, bt_start = NULL,
     } else if (weight=="gmm"){
       out = sgmm_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, Phi_start, w_start)
     } else if (weight=="gmm_new"){ 
-      out = sgmm_new_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start)
+      out = sgmm_new_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start, w_option=w_option)
     }
     
     beta_hat = out$beta_hat
@@ -103,7 +105,7 @@ sgmm = function(x=x, y=y, z=x, gamma_0=1, alpha=0.501, bt_start = NULL,
       } else if (weight=="gmm"){
         out = sgmm_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, Phi_start, w_start)
       } else if (weight=="gmm_new"){ 
-        out = sgmm_new_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start)
+        out = sgmm_new_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start, w_option=w_option)
       }
       
       beta_hat = out$beta_hat
@@ -115,5 +117,4 @@ sgmm = function(x=x, y=y, z=x, gamma_0=1, alpha=0.501, bt_start = NULL,
     }
   }
   return(list(coefficient=beta_hat_all, V_hat=V_hat_all))
-
 }
