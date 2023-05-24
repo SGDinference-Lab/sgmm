@@ -28,6 +28,10 @@ List s2sls_cpp(const arma::mat& x,
   b_i.zeros(p);
   V_n.zeros(p,p);
 
+  double A_i1 = 0.0;
+  double b_i1 = 0.0;
+  double V_n1 = 0.0;
+
   double gamma_i;
   arma::mat Phi_lag = Phi_start;
   arma::mat w_i = w_start;
@@ -54,12 +58,22 @@ List s2sls_cpp(const arma::mat& x,
       A_i = A_i + std::pow(obs, 2.0) * bar_bt_i * trans(bar_bt_i);
       b_i = b_i + std::pow(obs, 2.0) * bar_bt_i;
       c_i = c_i + std::pow(obs, 2.0);
+    } else if ( inference == "rs1") {
+      A_i1 = A_i1 + std::pow(obs, 2.0) * bar_bt_i[1] * bar_bt_i[1];
+      b_i1 = b_i1 + std::pow(obs, 2.0) * bar_bt_i[1];
+      c_i = c_i + std::pow(obs, 2.0);
     }
   }
 
-  V_n = ( A_i - b_i * trans(bar_bt_i) - bar_bt_i * trans(b_i) + c_i * bar_bt_i * trans(bar_bt_i) ) / (std::pow(n, 2.0));
+  if ( inference == "rs") {
+    V_n = ( A_i - b_i * trans(bar_bt_i) - bar_bt_i * trans(b_i) + c_i * bar_bt_i * trans(bar_bt_i) ) / (std::pow(n, 2.0));
+  } else if ( inference == "rs1") {
+    V_n1 = ( A_i1 - b_i1 * bar_bt_i[1] - bar_bt_i[1] * b_i1 + c_i * bar_bt_i[1] * bar_bt_i[1] ) / (std::pow(n, 2.0));
+  }
+  
   
   return List::create(Named("beta_hat") = bar_bt_i,
-                      Named("V_hat") = V_n);
+                      Named("V_hat") = V_n,
+                      Named("V1_hat") = V_n1);
 }
 

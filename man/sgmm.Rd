@@ -15,9 +15,11 @@ sgmm(
   inference = "rs",
   weight = "2sls",
   n0 = 0,
+  n1 = 0,
   Phi_start = Phi_start,
   w_start = w_start,
-  n_perm = 1
+  n_perm = 1,
+  w_option
 )
 }
 \arguments{
@@ -39,11 +41,15 @@ sgmm(
 
 \item{n0}{sample size for the initial sample (default: 0)}
 
+\item{n1}{sample size for the s2sls sample when "gmm" option is chosen (default: 0)}
+
 \item{Phi_start}{(p x q) matrix of starting values for Phi}
 
 \item{w_start}{(q x q) matrix of starting values for W}
 
-\item{n_perm}{number of permutations (default: 1)}
+\item{n_perm}{number of permutations (default: 1). If n_perm=0, there is no permutation.}
+
+\item{w_option}{character specifying the option on beta_{i-1} when computing the weight. Default is "frequent"}
 }
 \value{
 #' An object of class \code{"sgdi"}, which is a list containing the following
