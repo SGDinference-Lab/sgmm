@@ -63,24 +63,34 @@ sgmm = function(x=x, y=y, z=x, gamma_0=1, alpha=0.501, bt_start = NULL,
     #----------------------------------------------
     # Linear Instrumental Variable Mean Regression
     #----------------------------------------------
-    
-    if (weight=="2sls"){
-      out = s2sls_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, Phi_start, w_start)
-    } else if (weight=="2sls_so"){
-      out = s2sls_so_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, Phi_start, w_start)
-    } else if (weight=="gmm"){
-      out = sgmm_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, Phi_start, w_start)
-    } else if (weight=="gmm_new"){ 
-      out = sgmm_new_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start, w_option=w_option)
-    } else if (weight=="gmm_so"){
-      out = sgmm_so_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start, w_option=w_option)      
+    if (inference == "rs"){
+      if (weight=="2sls"){
+        out = s2sls_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, Phi_start, w_start)
+      } else if (weight=="2sls_so"){
+        out = s2sls_so_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, Phi_start, w_start)
+      } else if (weight=="gmm"){
+        out = sgmm_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, Phi_start, w_start)
+      } else if (weight=="gmm_new"){ 
+        out = sgmm_new_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start, w_option=w_option)
+      } else if (weight=="gmm_so"){
+        out = sgmm_so_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start, w_option=w_option)      
+      }      
+      beta_hat = out$beta_hat
+      V_hat = out$V_hat
+      
+      beta_hat_all = cbind(beta_hat_all, beta_hat)
+      V_hat_all = abind::abind(V_hat_all, V_hat, along=3)
+    } else if (inference == "plugin"){
+      if (weight=="gmm_so"){
+        out = sgmm_so_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start, w_option=w_option)      
+      }      
+      beta_hat = out$beta_hat
+      V_hat = out$V_hat
+      
+      beta_hat_all = cbind(beta_hat_all, beta_hat)
+      V_hat_all = abind::abind(V_hat_all, V_hat, along=3)
     }
     
-    beta_hat = out$beta_hat
-    V_hat = out$V_hat
-    
-    beta_hat_all = cbind(beta_hat_all, beta_hat)
-    V_hat_all = abind::abind(V_hat_all, V_hat, along=3)
   } else if (n_perm > 0) {
     for (i_p in 1:n_perm){
       

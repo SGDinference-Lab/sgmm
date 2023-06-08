@@ -73,7 +73,7 @@ List sgmm_so_cpp(const arma::mat& x,
     w_i = ((n0 + obs) * w_i) / (n0 + obs - 1) * ( i_mat - z_i * trans(z_i) * w_i / m_i );
     bar_bt_i = ( bar_bt_i*(obs - 1) + bt_i ) / (obs);
     
-    if ( inference == "rs") {
+    if ( inference == "rs" || inference == "plugin") {
       A_i = A_i + std::pow(obs, 2.0) * bar_bt_i * trans(bar_bt_i);
       b_i = b_i + std::pow(obs, 2.0) * bar_bt_i;
       c_i = c_i + std::pow(obs, 2.0);
@@ -158,7 +158,7 @@ List sgmm_so_cpp(const arma::mat& x,
     
     bar_bt_i = ( bar_bt_i*(obs - 1) + bt_i ) / (obs);
 
-    if ( inference == "rs") {
+    if ( inference == "rs" ) {
       A_i = A_i + std::pow(obs, 2.0) * bar_bt_i * trans(bar_bt_i);
       b_i = b_i + std::pow(obs, 2.0) * bar_bt_i;
       c_i = c_i + std::pow(obs, 2.0);
@@ -172,6 +172,8 @@ List sgmm_so_cpp(const arma::mat& x,
 
   if ( inference == "rs") {
     V_n = ( A_i - b_i * trans(bar_bt_i) - bar_bt_i * trans(b_i) + c_i * bar_bt_i * trans(bar_bt_i) ) / (std::pow(n, 2.0));
+  } else if ( inference == "plugin") {
+    V_n = so_inv;
   } else if ( inference == "rs1") {
     V_n1 = ( A_i1 - b_i1 * bar_bt_i[1] - bar_bt_i[1] * b_i1 + c_i * bar_bt_i[1] * bar_bt_i[1] ) / (std::pow(n, 2.0));
   }
