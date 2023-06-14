@@ -66,7 +66,7 @@ List sgmm_so_cpp(const arma::mat& x,
     //bar_small_g_i = ( bar_small_g_i*(obs - 1) + small_g_i ) / obs;
     so_mul = trans(Phi_lag) * w_i * Phi_lag;
     //so_inv = inv_sympd(so_mul);
-    so_inv = inv(so_mul);
+    so_inv = pinv(so_mul);
     bt_i = bt_i - gamma_i * so_inv * trans(Phi_lag) * w_i * small_g_i;
     Phi_lag = (n0 + obs - 1) * Phi_lag /(n0 + obs)  + (1)* G_i/(n0+obs);
     m_i = ( (n0 + obs - 1) + trans(z_i) * w_i * z_i ).eval()(0,0);
@@ -94,7 +94,7 @@ List sgmm_so_cpp(const arma::mat& x,
     bar_small_g_i = ( bar_small_g_i*(obs - 1) + small_g_i ) / obs;
     so_mul = trans(Phi_lag) * w_i * Phi_lag;
     //so_inv = inv_sympd(so_mul);
-    so_inv = inv(so_mul);
+    so_inv = pinv(so_mul);
     bt_i = bt_i - gamma_i * so_inv * trans(Phi_lag) * w_i * small_g_i;
     Phi_lag = (n0 + obs - 1) * Phi_lag /(n0 + obs)  + (1)* G_i/(n0+obs);
     
