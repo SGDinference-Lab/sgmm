@@ -19,7 +19,8 @@ sgmm(
   Phi_start = Phi_start,
   w_start = w_start,
   n_perm = 1,
-  w_option
+  w_option,
+  path_index = -1
 )
 }
 \arguments{
@@ -50,6 +51,8 @@ sgmm(
 \item{n_perm}{number of permutations (default: 1). If n_perm=0, there is no permutation.}
 
 \item{w_option}{character specifying the option on beta_{i-1} when computing the weight. Default is "frequent"}
+
+\item{path_index}{index number for computing the whole path of estimates and CIs (default: -1. No path output)}
 }
 \value{
 #' An object of class \code{"sgdi"}, which is a list containing the following
