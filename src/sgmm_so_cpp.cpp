@@ -39,8 +39,7 @@ List sgmm_so_cpp(const arma::mat& x,
   arma::mat Phi_lag = Phi_start;
   arma::mat w_i = w_start;
   arma::colvec bt_i = bt_start;
-  arma::colvec bar_bt_i;
-  bar_bt_i.zeros(p);
+  arma::colvec bar_bt_i = bt_start;
   arma::mat i_mat = eye(q,q);
   double m_i;
   arma::vec z_i = trans(z.row(0));
@@ -84,6 +83,11 @@ List sgmm_so_cpp(const arma::mat& x,
       A_i = A_i + std::pow(obs, 2.0) * bar_bt_i * trans(bar_bt_i);
       b_i = b_i + std::pow(obs, 2.0) * bar_bt_i;
       c_i = c_i + std::pow(obs, 2.0);
+    }
+    
+    if ( path_index >= 0 ) {
+      bar_bt_i_path(obs-1) = bar_bt_i(path_index-1);
+      so_inv_path(obs-1) = so_inv(path_index-1,path_index-1);
     }
   }
   

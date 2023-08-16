@@ -52,7 +52,7 @@ sgmm(
 
 \item{w_option}{character specifying the option on beta_{i-1} when computing the weight. Default is "frequent"}
 
-\item{path_index}{index number for computing the whole path of estimates and CIs (default: -1. No path output)}
+\item{path_index}{index number for computing the whole path of estimates and variances (default: -1. No path output)}
 }
 \value{
 #' An object of class \code{"sgdi"}, which is a list containing the following
