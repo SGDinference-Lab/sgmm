@@ -94,8 +94,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // sgmm_so_cpp
-List sgmm_so_cpp(const arma::mat& x, const arma::colvec& y, const arma::mat& z, const double& gamma_0, const double& alpha, const arma::colvec& bt_start, const std::string inference, const int& n0, const int& n1, const arma::mat& Phi_start, const arma::mat& w_start, const std::string w_option, const int& path_index);
-RcppExport SEXP _sgmm_sgmm_so_cpp(SEXP xSEXP, SEXP ySEXP, SEXP zSEXP, SEXP gamma_0SEXP, SEXP alphaSEXP, SEXP bt_startSEXP, SEXP inferenceSEXP, SEXP n0SEXP, SEXP n1SEXP, SEXP Phi_startSEXP, SEXP w_startSEXP, SEXP w_optionSEXP, SEXP path_indexSEXP) {
+List sgmm_so_cpp(const arma::mat& x, const arma::colvec& y, const arma::mat& z, const double& gamma_0, const double& alpha, const arma::colvec& bt_start, const std::string inference, const int& n0, const int& n1, const arma::mat& Phi_start, const arma::mat& w_start, const std::string w_option);
+RcppExport SEXP _sgmm_sgmm_so_cpp(SEXP xSEXP, SEXP ySEXP, SEXP zSEXP, SEXP gamma_0SEXP, SEXP alphaSEXP, SEXP bt_startSEXP, SEXP inferenceSEXP, SEXP n0SEXP, SEXP n1SEXP, SEXP Phi_startSEXP, SEXP w_startSEXP, SEXP w_optionSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -111,8 +111,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const arma::mat& >::type Phi_start(Phi_startSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type w_start(w_startSEXP);
     Rcpp::traits::input_parameter< const std::string >::type w_option(w_optionSEXP);
-    Rcpp::traits::input_parameter< const int& >::type path_index(path_indexSEXP);
-    rcpp_result_gen = Rcpp::wrap(sgmm_so_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start, w_option, path_index));
+    rcpp_result_gen = Rcpp::wrap(sgmm_so_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start, w_option));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -122,7 +121,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_sgmm_s2sls_so_cpp", (DL_FUNC) &_sgmm_s2sls_so_cpp, 10},
     {"_sgmm_sgmm_cpp", (DL_FUNC) &_sgmm_sgmm_cpp, 10},
     {"_sgmm_sgmm_new_cpp", (DL_FUNC) &_sgmm_sgmm_new_cpp, 12},
-    {"_sgmm_sgmm_so_cpp", (DL_FUNC) &_sgmm_sgmm_so_cpp, 13},
+    {"_sgmm_sgmm_so_cpp", (DL_FUNC) &_sgmm_sgmm_so_cpp, 12},
     {NULL, NULL, 0}
 };
 

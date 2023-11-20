@@ -5,41 +5,41 @@ using namespace arma;
 
 // [[Rcpp::export]]
 List sgmm_so_cpp(const arma::mat& x, 
-                  const arma::colvec& y, 
-                  const arma::mat& z, 
-                  const double& gamma_0, 
-                  const double& alpha,
-                  const arma::colvec& bt_start, 
-                  const std::string inference,
-                  const int& n0,
-                  const int& n1,
-                  const arma::mat& Phi_start,
-                  const arma::mat& w_start,
-                  const std::string w_option,
-                  const int& path_index){
-
+                 const arma::colvec& y, 
+                 const arma::mat& z, 
+                 const double& gamma_0, 
+                 const double& alpha,
+                 const arma::colvec& bt_start, 
+                 const std::string inference,
+                 const int& n0,
+                 const int& n1,
+                 const arma::mat& Phi_start,
+                 const arma::mat& w_start,
+                 const std::string w_option){
+  
   int n = y.n_elem;
   int p = bt_start.n_elem;
   int q = z.n_cols;
-
+  
   arma::mat A_i;
   arma::vec b_i;
   double c_i = 0.0;
   arma::mat V_n;
-
+  
   A_i.zeros(p,p);
   b_i.zeros(p);
   V_n.zeros(p,p);
-
+  
   double A_i1 = 0.0;
   double b_i1 = 0.0;
   double V_n1 = 0.0;
-
+  
   double gamma_i;
   arma::mat Phi_lag = Phi_start;
   arma::mat w_i = w_start;
   arma::colvec bt_i = bt_start;
-  arma::colvec bar_bt_i = bt_start;
+  arma::colvec bar_bt_i;
+  bar_bt_i.zeros(p);
   arma::mat i_mat = eye(q,q);
   double m_i;
   arma::vec z_i = trans(z.row(0));
@@ -54,12 +54,6 @@ List sgmm_so_cpp(const arma::mat& x,
   arma::vec bar_bt_i_fix;
   arma::mat so_mul;
   arma::mat so_inv;
-  
-  // Declare matrices for the path
-  arma::vec bar_bt_i_path;
-  bar_bt_i_path.zeros(n);
-  arma::vec so_inv_path;
-  so_inv_path.zeros(n);
   
   // S2SLS procedure for the first 'n1' observations. 
   for (int obs = 1; obs < (n1+1); obs++){
@@ -78,16 +72,11 @@ List sgmm_so_cpp(const arma::mat& x,
     m_i = ( (n0 + obs - 1) + trans(z_i) * w_i * z_i ).eval()(0,0);
     w_i = ((n0 + obs) * w_i) / (n0 + obs - 1) * ( i_mat - z_i * trans(z_i) * w_i / m_i );
     bar_bt_i = ( bar_bt_i*(obs - 1) + bt_i ) / (obs);
-
+    
     if ( inference == "rs" || inference == "plugin") {
       A_i = A_i + std::pow(obs, 2.0) * bar_bt_i * trans(bar_bt_i);
       b_i = b_i + std::pow(obs, 2.0) * bar_bt_i;
       c_i = c_i + std::pow(obs, 2.0);
-    }
-    
-    if ( path_index >= 0 ) {
-      bar_bt_i_path(obs-1) = bar_bt_i(path_index-1);
-      so_inv_path(obs-1) = so_inv(path_index-1,path_index-1);
     }
   }
   
@@ -96,7 +85,7 @@ List sgmm_so_cpp(const arma::mat& x,
   
   // SGMM procedure for the remaining 'n-n1' observations. 
   for (int obs = (n1+1); obs < (n+1); obs++){
-
+    
     gamma_i = gamma_0 * std::pow(obs, -alpha);
     z_i = trans(z.row(obs-1));
     G_i = z_i * x.row(obs-1);
@@ -121,13 +110,13 @@ List sgmm_so_cpp(const arma::mat& x,
       m_i = ( (n0 + obs - 1) + trans(small_g_i) * w_i * small_g_i ).eval()(0,0);
       w_i = ((n0 + obs) * w_i) / (n0 + obs - 1) * ( i_mat - (small_g_i * trans(small_g_i) ) * w_i / m_i );
       if (obs*1.0/n == 0.4) {
-       bar_bt_i_fix = bar_bt_i;
+        bar_bt_i_fix = bar_bt_i;
       }
       if (obs*1.0/n == 0.6) {
-       bar_bt_i_fix = bar_bt_i;
+        bar_bt_i_fix = bar_bt_i;
       }
       if (obs*1.0/n == 0.8) {
-       bar_bt_i_fix = bar_bt_i;
+        bar_bt_i_fix = bar_bt_i;
       }
     } else {
       Rcerr << "w_option is chosen incorrectly. \n";
@@ -160,15 +149,15 @@ List sgmm_so_cpp(const arma::mat& x,
     // if (obs*10/n == 8) {
     //   bar_bt_i_fix = bar_bt_i;
     // }
-
+    
     // Alternative 5: bar_bt_i fix at the true beta_0
     // small_g_i = G_i * bar_bt_i_fix + H_i;
     // m_i = ( (n0 + obs - 1) + trans(small_g_i) * w_i * small_g_i ).eval()(0,0);
     // w_i = ((n0 + obs) * w_i) / (n0 + obs - 1) * ( i_mat - (small_g_i * trans(small_g_i) ) * w_i / m_i );
-        
+    
     
     bar_bt_i = ( bar_bt_i*(obs - 1) + bt_i ) / (obs);
-
+    
     if ( inference == "rs" ) {
       A_i = A_i + std::pow(obs, 2.0) * bar_bt_i * trans(bar_bt_i);
       b_i = b_i + std::pow(obs, 2.0) * bar_bt_i;
@@ -178,13 +167,9 @@ List sgmm_so_cpp(const arma::mat& x,
       b_i1 = b_i1 + std::pow(obs, 2.0) * bar_bt_i[1];
       c_i = c_i + std::pow(obs, 2.0);
     }
-    if ( path_index >= 0 ) {
-      bar_bt_i_path(obs-1) = bar_bt_i(path_index-1);
-      so_inv_path(obs-1) = so_inv(path_index-1,path_index-1);
-    }
     
   }
-
+  
   if ( inference == "rs") {
     V_n = ( A_i - b_i * trans(bar_bt_i) - bar_bt_i * trans(b_i) + c_i * bar_bt_i * trans(bar_bt_i) ) / (std::pow(n, 2.0));
   } else if ( inference == "plugin") {
@@ -194,8 +179,5 @@ List sgmm_so_cpp(const arma::mat& x,
   }
   
   return List::create(Named("beta_hat") = bar_bt_i,
-                      Named("V_hat") = V_n,
-                      Named("beta_hat_path") = bar_bt_i_path,
-                      Named("V_hat_path") = so_inv_path);
+                      Named("V_hat") = V_n);
 }
-

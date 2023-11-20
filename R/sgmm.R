@@ -74,7 +74,7 @@ sgmm = function(x=x, y=y, z=x, gamma_0=1, alpha=0.501, bt_start = NULL,
       } else if (weight=="gmm_new"){ 
         out = sgmm_new_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start, w_option=w_option)
       } else if (weight=="gmm_so"){
-        out = sgmm_so_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start, w_option=w_option, path_index=path_index)      
+        out = sgmm_so_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start, w_option=w_option)      
       }      
       beta_hat = out$beta_hat
       V_hat = out$V_hat
@@ -85,7 +85,7 @@ sgmm = function(x=x, y=y, z=x, gamma_0=1, alpha=0.501, bt_start = NULL,
       V_hat_all = abind::abind(V_hat_all, V_hat, along=3)
       } else if (inference == "plugin"){
       if (weight=="gmm_so"){
-        out = sgmm_so_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start, w_option=w_option, path_index=path_index)            
+        out = sgmm_so_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start, w_option=w_option)
       }      
       beta_hat = out$beta_hat
       V_hat = out$V_hat
@@ -132,7 +132,8 @@ sgmm = function(x=x, y=y, z=x, gamma_0=1, alpha=0.501, bt_start = NULL,
       } else if (weight=="gmm_new"){ 
         out = sgmm_new_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start, w_option=w_option)
       } else if (weight=="gmm_so"){
-        out = sgmm_so_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start, w_option=w_option, path_index=path_index)      
+        #out = sgmm_so_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start, w_option=w_option, path_index=path_index)
+        out = sgmm_so_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start, w_option=w_option)      
       }
       
       beta_hat = out$beta_hat
