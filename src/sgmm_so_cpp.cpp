@@ -15,7 +15,8 @@ List sgmm_so_cpp(const arma::mat& x,
                  const int& n1,
                  const arma::mat& Phi_start,
                  const arma::mat& w_start,
-                 const std::string w_option){
+                 const std::string w_option,
+                 const int& path_index){
   
   int n = y.n_elem;
   int p = bt_start.n_elem;
@@ -38,8 +39,7 @@ List sgmm_so_cpp(const arma::mat& x,
   arma::mat Phi_lag = Phi_start;
   arma::mat w_i = w_start;
   arma::colvec bt_i = bt_start;
-  arma::colvec bar_bt_i;
-  bar_bt_i.zeros(p);
+  arma::colvec bar_bt_i = bt_start;
   arma::mat i_mat = eye(q,q);
   double m_i;
   arma::vec z_i = trans(z.row(0));
@@ -54,6 +54,12 @@ List sgmm_so_cpp(const arma::mat& x,
   arma::vec bar_bt_i_fix;
   arma::mat so_mul;
   arma::mat so_inv;
+  
+  // Declare matrices for the path
+  arma::vec bar_bt_i_path;
+  bar_bt_i_path.zeros(n);
+  arma::vec so_inv_path;
+  so_inv_path.zeros(n);
   
   // S2SLS procedure for the first 'n1' observations. 
   for (int obs = 1; obs < (n1+1); obs++){
@@ -77,6 +83,11 @@ List sgmm_so_cpp(const arma::mat& x,
       A_i = A_i + std::pow(obs, 2.0) * bar_bt_i * trans(bar_bt_i);
       b_i = b_i + std::pow(obs, 2.0) * bar_bt_i;
       c_i = c_i + std::pow(obs, 2.0);
+    }
+    
+    if ( path_index >= 0 ) {
+      bar_bt_i_path(obs-1) = bar_bt_i(path_index-1);
+      so_inv_path(obs-1) = so_inv(path_index-1,path_index-1);
     }
   }
   
@@ -167,6 +178,10 @@ List sgmm_so_cpp(const arma::mat& x,
       b_i1 = b_i1 + std::pow(obs, 2.0) * bar_bt_i[1];
       c_i = c_i + std::pow(obs, 2.0);
     }
+    if ( path_index >= 0 ) {
+      bar_bt_i_path(obs-1) = bar_bt_i(path_index-1);
+      so_inv_path(obs-1) = so_inv(path_index-1,path_index-1);
+    }
     
   }
   
@@ -179,5 +194,7 @@ List sgmm_so_cpp(const arma::mat& x,
   }
   
   return List::create(Named("beta_hat") = bar_bt_i,
-                      Named("V_hat") = V_n);
+                      Named("V_hat") = V_n,
+                      Named("beta_hat_path") = bar_bt_i_path,
+                      Named("V_hat_path") = so_inv_path);
 }

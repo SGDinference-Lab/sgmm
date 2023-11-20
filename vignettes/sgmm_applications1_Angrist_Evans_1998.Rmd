@@ -1,0 +1,317 @@
+---
+title: 'SGMM Application 1: Angrist and Evans (1998)'
+author: Xiaohong Chen, Sokbae Lee, Yuan Liao, Myung Hwan Seo, Youngki Shin, Myunghyun
+  Song
+date: "2023-11-20"
+output: pdf_document
+---
+
+We revisit Angrist and Evans (1998) and estimate the model with SGMM and the alternative.
+
+```{r}
+rm(list = ls())
+set.seed(2023)
+
+# Call libraries
+library(tictoc)
+library(gmm)
+library(sgmm)
+
+# use the AE80 dataset
+load("AE80.rda")
+n_total = nrow(AE80)
+
+# Permutation of the original data to prevent a possible ordering/sorting.
+perm_index = sample(n_total)
+perm_data = AE80[perm_index, ]
+
+y = (perm_data$weeksm)/52
+z = perm_data$samesex_iv
+x = perm_data$kidcount
+x = as.integer(x > 2)
+
+# We use 1,000 sample points for the initial value estimation
+# n0 = n_total-10
+#n0 = n_total*0.1
+n0 = 1e04
+# sample split: initial sample 
+x0 = x[c(1:n0)]
+z0 = z[c(1:n0)]
+y0 = y[c(1:n0)]
+# sample split: main sample 
+x1 = x[c((n0+1):n_total)]
+z1 = z[c((n0+1):n_total)]
+y1 = y[c((n0+1):n_total)]
+
+n = length(y1)
+index_X1 = 1
+n1 = floor(10*sqrt(n))
+```
+
+## TSLS
+
+```{r}
+start.2sls = tic("2sls")
+tsls = ivreg::ivreg(y1 ~ x1 | z1) 
+# use heteroskedasticity-robust standard error for inference
+tsls_ci = lmtest:: coefci(tsls, parm = (index_X1+1), level = 0.95, df = Inf, 
+                          vcov = sandwich::vcovHC, type = "HC0")
+result_2sls = cbind(tsls$coefficients[index_X1+1], tsls_ci)
+rownames(result_2sls) = NULL
+end.2sls = toc()
+time.2sls = end.2sls$toc - end.2sls$tic
+print(result_2sls)
+```
+
+## GMM
+
+Check that the point estimation is numerically the same since the model is exactly identified. IC is slightly different by the computational errors(?).
+
+```{r}
+start.gmm = tic("gmm")
+g0 = y1~x1
+iv = z1
+out_gmm = gmm(g0,x=iv)
+gmm_ci = confint(out_gmm, parm = (index_X1+1), level = 0.95)$test
+result_gmm = c(out_gmm$coefficients[index_X1+1], gmm_ci)
+end.gmm = toc()
+time.gmm = end.gmm$toc - end.gmm$tic
+print(result_gmm)
+```
+
+## S2SLS
+
+### Use the original variables (no change)
+
+```{r}
+# Original scale and location
+z0_s = cbind(1, z0)
+x0_s = cbind(1, x0)
+y0_s = y0
+
+
+
+
+Phi_start_s = (t(z0_s)%*%x0_s)/n0
+# no intercept TSLS (intercept is already included in x and z)
+iv0_s = ivreg::ivreg(y0_s ~ x0_s - 1  | z0_s - 1)
+bt_start_s = iv0_s$coefficients
+w_start_s = solve(t(z0_s)%*%z0_s/n0)
+
+# gamma_0 selection (added on July 26th)
+
+tmp1 = solve(t(Phi_start_s)%*%w_start_s%*%Phi_start_s)
+tmp2 = t(Phi_start_s)%*%w_start_s
+
+snorm_result = matrix(NA, nrow=n0, ncol=1)
+for (i in 1:n0){
+  tmp_i = (as.matrix(z0_s[i,]))%*%t(as.matrix(x0_s[i,]))
+  tmp = tmp1%*%tmp2%*%tmp_i 
+  snorm = norm(tmp, type="2")
+  snorm_result[i,]=snorm/ncol(x0_s) 
+}
+Psi0 = quantile(snorm_result,0.5)
+gamma0 = 1/Psi0
+print(gamma0)
+
+
+
+z1_s = cbind(1, z1)
+x1_s = cbind(1, x1)
+y1_s = y1
+
+Phi_start3 = (t(z0_s)%*%x0_s)/n0
+# no intercept TSLS
+iv0_3 = ivreg::ivreg(y0_s ~ x0_s - 1  | z0_s -1 )
+bt_start3 = iv0_3$coefficients
+w_start3 = solve(t(z0_s)%*%z0_s/n0)
+
+# S2SLS
+start.s2sls_so3 = tic("s2sls_so")
+out3 = sgmm(x=x1_s, y=y1_s, z=z1_s, gamma_0=gamma0, alpha=0.501, bt_start = bt_start3,
+           inference = "rs", weight= "2sls_so", n0 = n0,
+           Phi_start = Phi_start3, w_start = w_start3, n_perm = 0)
+end.s2sls_so3 = toc()
+
+# confidence intervals 
+cv_rs = 6.747
+est3 = out3$coefficient[index_X1+1,]
+est_ci_lb3 = est3 - cv_rs * sqrt(out3$V_hat[index_X1+1,index_X1+1,]/n) 
+est_ci_ub3 = est3 + cv_rs * sqrt(out3$V_hat[index_X1+1,index_X1+1,]/n)
+result_s2sls_so3 = cbind(est3, est_ci_lb3, est_ci_ub3)
+time.s2sls_so3 = end.s2sls_so3$toc - end.s2sls_so3$tic
+print(result_s2sls_so3)
+```
+
+## SGMM
+
+### Use the original variables (no change)
+
+```{r}
+Phi_start4 = (t(z0_s)%*%x0_s)/n0
+# no intercept TSLS
+iv0_4 = ivreg::ivreg(y0_s ~ x0_s - 1  | z0_s -1 )
+bt_start4 = iv0_4$coefficients
+w_start4 = solve(t(z0_s)%*%z0_s/n0)
+
+# sgmm
+start.sgmm_so3 = tic("sgmm_so")
+out4 = sgmm(x=x1_s, y=y1_s, z=z1_s, gamma_0=gamma0 , alpha=0.501, bt_start = bt_start4,             
+           inference = "rs", weight= "gmm_so", n0 = n0, n1 = n1,
+           Phi_start = Phi_start4, w_start = w_start4, n_perm = 0, w_option="single")
+end.sgmm_so4 = toc()
+
+# confidence intervals 
+cv_rs = 6.747
+est4 = out4$coefficient[index_X1+1,]
+est_ci_lb4 = est4 - cv_rs * sqrt(out4$V_hat[index_X1+1,index_X1+1,]/n) 
+est_ci_ub4 = est4 + cv_rs * sqrt(out4$V_hat[index_X1+1,index_X1+1,]/n)
+result_sgmm_so4 = cbind(est4, est_ci_lb4, est_ci_ub4)
+time.sgmm_so4 = end.sgmm_so4$toc - end.sgmm_so4$tic
+print(result_sgmm_so4)
+```
+
+### SGMM_plugin
+
+```{r}
+# SGMM_plugin
+start.sgmm_plugin = tic("sgmm_plugin")
+out5 = sgmm(x=x1_s, y=y1_s, z=z1_s, gamma_0=gamma0, alpha=0.501, bt_start = bt_start4,
+           inference = "plugin", weight= "gmm_so", n0 = n0, n1 = n1,
+           Phi_start = Phi_start4, w_start = w_start4, n_perm = 0, w_option="single")
+end.sgmm_plugin = toc()
+
+# confidence intervals 
+cv_plugin = 1.96
+est5 = out5$coefficient[index_X1+1,]
+est_ci_lb5 = est5 - cv_plugin * sqrt(out5$V_hat[index_X1+1,index_X1+1,]/n) 
+est_ci_ub5 = est5 + cv_plugin * sqrt(out5$V_hat[index_X1+1,index_X1+1,]/n)
+result_sgmm_so5 = cbind(est5, est_ci_lb5, est_ci_ub5)
+time.sgmm_plugin = end.sgmm_plugin$toc - end.sgmm_plugin$tic
+print(result_sgmm_so5)
+```
+
+
+### Multiple Epochs
+
+```{r}
+# Original scale and location
+z0_me = cbind(1, z0)
+x0_me = cbind(1, x0)
+y0_me = y0
+
+Phi_start_me = (t(z0_me)%*%x0_me)/n0
+# no intercept TSLS (intercept is already included in x and z)
+iv0_me = ivreg::ivreg(y0_me ~ x0_me - 1  | z0_me - 1)
+bt_start_me = iv0_me$coefficients
+w_start_me = solve(t(z0_me)%*%z0_me/n0)
+
+# gamma_0 selection (added on July 26th)
+
+tmp1 = solve(t(Phi_start_me)%*%w_start_me%*%Phi_start_me)
+tmp2 = t(Phi_start_me)%*%w_start_me
+
+snorm_result = matrix(NA, nrow=n0, ncol=1)
+for (i in 1:n0){
+  tmp_i = (as.matrix(z0_me[i,]))%*%t(as.matrix(x0_me[i,]))
+  tmp = tmp1%*%tmp2%*%tmp_i 
+  snorm = norm(tmp, type="2")
+  snorm_result[i,]=snorm/ncol(x0_me) 
+}
+Psi0 = quantile(snorm_result,0.5)
+gamma0 = 1/Psi0
+print(gamma0)
+a_cnst = 0.501
+
+# Multiple Epochs
+
+z1_me = cbind(1, z1)
+x1_me = cbind(1, x1)
+y1_me = y1
+z_me = {}
+x_me = {}
+y_me = {}
+
+no_epochs = 3
+for (i_epoch in 1:no_epochs){
+  epoch_index = sample(n)
+  z_me = rbind(z_me, z1_me[epoch_index,])
+  x_me = rbind(x_me, x1_me[epoch_index,])
+  y_me = rbind(y_me, matrix(y1_me[epoch_index],ncol=1))
+}
+
+n_extend = length(y_me)
+
+# SGMM plugin with multiple epochs
+path_index=index_X1+1
+start.epoch = tic("sgmm_epochs")
+out_me = sgmm(x=x_me, y=y_me, z=z_me, gamma_0=gamma0, alpha=a_cnst, bt_start = bt_start_me,
+              inference = "plugin", weight= "gmm_so", n0 = n0, n1=n1,
+              Phi_start = Phi_start_me, w_start = w_start_me,
+              n_perm = 0, w_option="single", path_index=path_index)
+#out3 = sgmm(x=x1_s, y=y1_s, z=z1_s, gamma_0=gamma0, alpha=0.501, bt_start = bt_start3,
+#           inference = "rs", weight= "2sls_so", n0 = n0,
+#           Phi_start = Phi_start3, w_start = w_start3, n_perm = 0)
+end.epoch = toc()
+
+
+# confidence intervals 
+cv_plugin = 1.96
+est_me = out_me$coefficient[index_X1+1,]
+est_ci_lb_me = est_me - cv_plugin * sqrt(out_me$V_hat[index_X1+1,index_X1+1,]/n) 
+est_ci_ub_me = est_me + cv_plugin * sqrt(out_me$V_hat[index_X1+1,index_X1+1,]/n)
+result_sgmm_plugin_me = cbind(est_me, est_ci_lb_me, est_ci_ub_me)
+
+time.epoch = end.epoch$toc - end.epoch$tic
+
+print(result_sgmm_plugin_me)
+
+p_index = seq(1, n_extend, 100)
+p_coef_path = out_me$coef_path[p_index]
+p_var_path = out_me$V_hat_path[p_index]
+p_index2 = (p_index < n)*p_index + (p_index >= n) * n
+p_ci_lb_path = p_coef_path - cv_plugin * sqrt(p_var_path/p_index2)
+p_ci_ub_path = p_coef_path + cv_plugin * sqrt(p_var_path/p_index2)
+
+fig1 = plot(x=p_index, y=p_coef_path, type="l", col="red", ylim=c(-0.3,0),  xaxt="n", xlab="Epochs", ylab="Estimates", cex.lab=1.3)
+lines(x=p_index, y=p_ci_lb_path, lty="dotted", col="black")
+lines(x=p_index, y=p_ci_ub_path, lty="dotted", col="black")
+abline(h = result_2sls[1], lty="longdash", col="blue")
+for (i in c(0:no_epochs)){
+  abline(v=n_extend/no_epochs*i, lty="dashed", col="black")
+  mtext(as.character(i), side=1, at=n_extend/no_epochs*i, cex=1)
+}
+
+# Save the graph as png file
+png(file="path2.png",width=800, height=400)
+fig1 = plot(x=p_index, y=p_coef_path, type="l", col="red", ylim=c(-0.30,0),  xaxt="n", xlab="Epochs", ylab="Estimates", cex.lab=1.3)
+lines(x=p_index, y=p_ci_lb_path, lty="dotted", col="black")
+lines(x=p_index, y=p_ci_ub_path, lty="dotted", col="black")
+abline(h = result_2sls[1], lty="longdash", col="blue")
+for (i in c(0:no_epochs)){
+  abline(v=n_extend/no_epochs*i, lty="dashed", col="black")
+  mtext(as.character(i), side=1, at=n_extend/no_epochs*i, cex=1)
+}
+dev.off()
+
+# SGMM ME result
+coef_me = tail(p_coef_path,1)
+ci_lb_me = tail(p_ci_lb_path,1)
+ci_ub_me = tail(p_ci_ub_path,1)
+
+result_me = round(c(coef_me, ci_lb_me, ci_ub_me),4)
+```
+
+
+### Make a matrix for the table
+```{r}
+out_mat = matrix (NA, 6, 5)
+out_mat[ ,c(1:3)] = round(rbind(result_2sls, result_gmm, result_s2sls_so3, result_sgmm_so4, result_sgmm_so5, result_me),4)
+rownames(out_mat) = c("2SLS", "GMM", "S2SLS", "SGMM RS", "SGMM PI", "SGMM ME")
+colnames(out_mat) = c("Estimate", "CI lower", "CI upper", "CI Length", "Time (sec)")
+ci_length = out_mat[,3]-out_mat[,2]
+out_mat[,4] = ci_length
+comp_time = c(time.2sls, time.gmm, time.s2sls_so3, time.sgmm_so4, time.sgmm_plugin, time.epoch)
+out_mat[,5] = round(comp_time,2)
+print(out_mat)
+```

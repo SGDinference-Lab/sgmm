@@ -38,10 +38,10 @@ sgmm = function(x=x, y=y, z=x, gamma_0=1, alpha=0.501, bt_start = NULL,
                 inference="rs", weight="2sls", n0=0, n1=0, Phi_start=Phi_start, 
                 #w_start=w_start, n_perm=1, w_option="frequent"){
                 w_start=w_start, n_perm=1, w_option, path_index=-1){
-
+  
   x = as.matrix(x)
   z = as.matrix(z)
-
+  
   # Get the dimension of x and the sample size: p and n
   p = ncol(as.matrix(x))
   n = length(y)
@@ -74,7 +74,7 @@ sgmm = function(x=x, y=y, z=x, gamma_0=1, alpha=0.501, bt_start = NULL,
       } else if (weight=="gmm_new"){ 
         out = sgmm_new_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start, w_option=w_option)
       } else if (weight=="gmm_so"){
-        out = sgmm_so_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start, w_option=w_option)      
+        out = sgmm_so_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start, w_option=w_option, path_index=path_index)      
       }      
       beta_hat = out$beta_hat
       V_hat = out$V_hat
@@ -83,9 +83,9 @@ sgmm = function(x=x, y=y, z=x, gamma_0=1, alpha=0.501, bt_start = NULL,
       
       beta_hat_all = cbind(beta_hat_all, beta_hat)
       V_hat_all = abind::abind(V_hat_all, V_hat, along=3)
-      } else if (inference == "plugin"){
+    } else if (inference == "plugin"){
       if (weight=="gmm_so"){
-        out = sgmm_so_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start, w_option=w_option)
+        out = sgmm_so_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start, w_option=w_option, path_index=path_index)            
       }      
       beta_hat = out$beta_hat
       V_hat = out$V_hat
@@ -132,8 +132,7 @@ sgmm = function(x=x, y=y, z=x, gamma_0=1, alpha=0.501, bt_start = NULL,
       } else if (weight=="gmm_new"){ 
         out = sgmm_new_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start, w_option=w_option)
       } else if (weight=="gmm_so"){
-        #out = sgmm_so_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start, w_option=w_option, path_index=path_index)
-        out = sgmm_so_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start, w_option=w_option)      
+        out = sgmm_so_cpp(x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start, w_option=w_option, path_index=path_index)      
       }
       
       beta_hat = out$beta_hat
