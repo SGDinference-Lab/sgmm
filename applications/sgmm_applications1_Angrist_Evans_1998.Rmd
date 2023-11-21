@@ -1,7 +1,9 @@
 ---
-title: "SGMM Example 1: Angrist and Evans (1998)"
-format: pdf
-editor: source
+title: 'SGMM Application 1: Angrist and Evans (1998)'
+author: Xiaohong Chen, Sokbae Lee, Yuan Liao, Myung Hwan Seo, Youngki Shin, Myunghyun
+  Song
+date: "2023-11-20"
+output: html_document
 ---
 
 We revisit Angrist and Evans (1998) and estimate the model with SGMM and the alternative.

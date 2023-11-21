@@ -3,7 +3,9 @@ title: 'SGMM Application 2: Angrist and Krueger (1991)'
 author: Xiaohong Chen, Sokbae Lee, Yuan Liao, Myung Hwan Seo, Youngki Shin, Myunghyun
   Song
 date: "2023-11-20"
-output: pdf_document
+output:
+  html_document:
+    df_print: paged
 ---
 
 We revisit Angrist and Krueger (1991) and estimate the model with SGMM and the alternative.
