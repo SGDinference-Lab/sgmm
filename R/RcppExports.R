@@ -21,3 +21,7 @@ sgmm_so_cpp <- function(x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Ph
     .Call('_sgmm_sgmm_so_cpp', PACKAGE = 'sgmm', x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start, w_option, path_index)
 }
 
+sgmm_sys_cpp <- function(x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start, w_option, path_index, n_eq) {
+    .Call('_sgmm_sgmm_sys_cpp', PACKAGE = 'sgmm', x, y, z, gamma_0, alpha, bt_start, inference, n0, n1, Phi_start, w_start, w_option, path_index, n_eq)
+}
+
