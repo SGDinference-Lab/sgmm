@@ -61,6 +61,7 @@ List sgmm_sys_cpp(const arma::mat& x,
   so_inv_path.zeros(n);
   
   // S2SLS procedure for the first 'n1' observations. 
+  Rcout << "S2SLS for the first n1 observations " << std::endl;
   for (int obs = 1; obs < (n1+1); obs++){
     Rcout << "obs: " << obs << std::endl;
     gamma_i = gamma_0 * std::pow(obs, -alpha);
@@ -94,7 +95,10 @@ List sgmm_sys_cpp(const arma::mat& x,
   bar_bt_i_fix = bar_bt_i;
   
   // SGMM procedure for the remaining 'n-n1' observations. 
+  Rcout << "SGMM for the next (n-n1) observations " << std::endl;
   for (int obs = (n1+1); obs < (n+1); obs++){
+    Rcout << "obs: " << obs << std::endl;
+    gamma_i = gamma_0 * std::pow(obs, -alpha);
     
     gamma_i = gamma_0 * std::pow(obs, -alpha);
     z_i = trans(z.rows( ((obs-1)*n_eq), (obs*n_eq-1)) );
