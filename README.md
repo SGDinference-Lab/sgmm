@@ -30,7 +30,7 @@ You can install the development version from
 devtools::install_github("SGDinference-Lab/sgmm")
 ```
 
-We begin by calling the SGDinference package.
+We begin by calling the **sgmm** package.
 
 ``` r
 library(sgmm)
